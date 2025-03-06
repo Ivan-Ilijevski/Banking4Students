@@ -5,13 +5,22 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "tailwind.config": [
+        "./tailwind.config.js"
       ]
-    }
+    },
+    "noImplicitAny": false,
+    "jsx": "react-native",
+    "types": [
+      "@gluestack-ui/themed"
+    ]
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
   ]
 }
