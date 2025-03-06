@@ -8,7 +8,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import { config } from '@gluestack-ui/themed';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 
