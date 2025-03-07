@@ -2,23 +2,21 @@ import React, { useState, useRef, useEffect } from "react";
 import { 
   Image, 
   ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
+  Pressable, 
   View, 
   Animated, 
   PanResponder,
   Dimensions,
   TextInput
 } from "react-native";
-import { Box } from "@/components/ui/box";
 import { Text } from "@/components/ui/text";
-import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
+import { Box } from "@/components/ui/box";
 import { ThemedView } from "@/components/ThemedView";
-import VisaCard from "@/components/VisaCard";
+import VisaCardCarousel from "@/components/VisaCardCarousel";
 import TransactionItem from "@/components/TransactionItem";
+import AnimatedStudentId from "@/components/AnimatedStudentId";
 
-const { height, width } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 const DRAWER_MIN_HEIGHT = 100;
 const DRAWER_HALF_HEIGHT = height * 0.4;
 const DRAWER_MAX_HEIGHT = height * 0.8;
@@ -27,8 +25,34 @@ export default function HomeScreen() {
   // State for search query
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Animated value for the drawer position
+  // State for student ID 
+  const [studentIdVisible, setStudentIdVisible] = useState(false);
+  const [profilePosition, setProfilePosition] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  
+  // Refs
+  const profileRef = useRef(null);
+  const scrollViewRef = useRef(null);
+  
+  // Animated values
   const drawerHeight = useRef(new Animated.Value(DRAWER_MIN_HEIGHT)).current;
+  const cardsPosition = useRef(new Animated.Value(0)).current;
+  
+  // Move cards down when ID is expanded
+  useEffect(() => {
+    if (studentIdVisible) {
+      Animated.timing(cardsPosition, {
+        toValue: 100,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    } else {
+      Animated.timing(cardsPosition, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [studentIdVisible]);
   
   // PanResponder for dragging the drawer
   const panResponder = useRef(
@@ -71,6 +95,27 @@ export default function HomeScreen() {
     }).start();
   };
 
+  // Get profile picture position for animation
+  const measureProfilePosition = () => {
+    if (profileRef.current) {
+      profileRef.current.measureInWindow((x, y, width, height) => {
+        setProfilePosition({ x, y, width, height });
+        setStudentIdVisible(true);
+      });
+    }
+  };
+
+  // Student data
+  const studentData = {
+    name: "Петар Петровски",
+    id: "12345/2022",
+    faculty: "Факултет за информатички науки и компjутерско инженерство",
+    department: "Компјутерски науки",
+    issueDate: "2022",
+    expiryDate: "2026",
+    photoUri: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=774&q=80"
+  };
+
   // Visa card data
   const visaCards = [
     {
@@ -85,9 +130,21 @@ export default function HomeScreen() {
       balance: "1000.000.000 МКД",
       limit: "100 МКД",
     },
+    {
+      id: "3",
+      type: "Visa Premium",
+      balance: "500.000 МКД",
+      limit: "250 МКД",
+    },
+    {
+      id: "4",
+      type: "Visa Credit",
+      balance: "2000.000 МКД",
+      limit: "1000 МКД",
+    },
   ];
 
-  // Transaction data - expanded with more transactions
+  // Transaction data
   const allTransactions = [
     {
       id: "1", 
@@ -137,22 +194,6 @@ export default function HomeScreen() {
       date: "3 Март",
       logo: require("@/assets/images/tinex-logo.png"),
     },
-    {
-      id: "7", 
-      company: "Ресторан",
-      location: "Скопје",
-      amount: "1200 Ден.",
-      date: "1 Март",
-      logo: require("@/assets/images/tinex-logo.png"),
-    },
-    {
-      id: "8", 
-      company: "Книжара",
-      location: "Скопје",
-      amount: "500 Ден.",
-      date: "28 Фев",
-      logo: require("@/assets/images/tinex-logo.png"),
-    },
   ];
 
   // Filtered transactions based on search
@@ -165,70 +206,101 @@ export default function HomeScreen() {
   // Handle split bill functionality
   const handleSplitBill = (transactionId) => {
     console.log("Split bill for transaction:", transactionId);
-    // Implement split bill functionality
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView className="flex-1 bg-gray-100">
+      {/* Animated Student ID */}
+      <AnimatedStudentId 
+        isVisible={studentIdVisible}
+        onClose={() => setStudentIdVisible(false)}
+        profilePictureRef={profileRef}
+        profilePicturePosition={profilePosition}
+        studentData={studentData}
+      />
+      
       {/* Main Content */}
-      <ScrollView style={styles.scrollView}>
+      <ScrollView 
+        ref={scrollViewRef}
+        className="flex-1 p-4"
+      >
         {/* Profile Circle */}
-        <View style={styles.profileContainer}>
-          <View style={styles.profileImageContainer}>
+        <Box className="items-center mb-6 mt-4">
+          <Pressable 
+            ref={profileRef}
+            className="w-24 h-24 rounded-full overflow-hidden"
+            onPress={measureProfilePosition}
+          >
             <Image
-              source={{ uri: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=774&q=80" }}
-              style={styles.profileImage}
+              source={{ uri: studentData.photoUri }}
+              className="w-full h-full"
             />
-          </View>
-        </View>
+          </Pressable>
+        </Box>
 
-        {/* Cards Section */}
-        <View style={styles.cardsContainer}>
-          {visaCards.map((card) => (
-            <VisaCard
-              key={card.id}
-              type={card.type}
-              balance={card.balance}
-              limit={card.limit}
-            />
-          ))}
-        </View>
+        {/* Cards Section - slide down when ID is shown */}
+        <Animated.View 
+          style={{
+            marginTop: cardsPosition,
+            backgroundColor: "#f0f0f0",
+            borderRadius: 12,
+            padding: 8,
+            marginBottom: 24,
+          }}
+        >
+          <VisaCardCarousel cards={visaCards} />
+        </Animated.View>
         
-        {/* Spacer to prevent content from being hidden behind the drawer */}
-        <View style={{ height: DRAWER_MIN_HEIGHT + 50 }} />
+        {/* Spacer */}
+        <View className="h-32" />
       </ScrollView>
 
-      {/* Custom Bottom Drawer */}
+      {/* Custom Bottom Drawer - slide down when ID is shown */}
       <Animated.View 
         style={[
-          styles.drawer,
-          { height: drawerHeight }
+          { 
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: drawerHeight,
+            transform: [{ translateY: cardsPosition }],
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            backgroundColor: "white",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: -3 },
+            shadowOpacity: 0.1,
+            shadowRadius: 5,
+            elevation: 10,
+            overflow: "hidden",
+          }
         ]}
       >
         {/* Drag Handle */}
         <View 
           {...panResponder.panHandlers}
-          style={styles.drawerHandle}
+          className="w-full items-center pt-2"
         >
-          <View style={styles.dragIndicator} />
-          <TouchableOpacity onPress={expandDrawer} style={styles.drawerHeader}>
-            <Text style={styles.drawerTitle}>Трансакции</Text>
-          </TouchableOpacity>
+          <View className="w-10 h-1 bg-gray-300 rounded mb-1" />
+          <Pressable onPress={expandDrawer} className="w-full px-4 py-2 flex-row items-center justify-between border-b border-gray-200">
+            <Text className="text-lg font-bold">Трансакции</Text>
+          </Pressable>
         </View>
 
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
+        <Box className="p-4 border-b border-gray-200">
           <TextInput
-            style={styles.searchInput}
+            className="bg-gray-100 rounded-lg p-2 text-base"
             placeholder="Пребарувај трансакции..."
             placeholderTextColor="#999"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
-        </View>
+        </Box>
 
         {/* Transactions List */}
-        <ScrollView style={styles.transactionList}>
+        <ScrollView className="flex-1 p-4">
           {filteredTransactions.map((transaction) => (
             <TransactionItem
               key={transaction.id}
@@ -243,108 +315,12 @@ export default function HomeScreen() {
           ))}
           
           {filteredTransactions.length === 0 && (
-            <View style={styles.emptyResults}>
-              <Text style={styles.emptyResultsText}>Нема пронајдени трансакции</Text>
-            </View>
+            <Box className="p-5 items-center">
+              <Text className="text-gray-500 text-base">Нема пронајдени трансакции</Text>
+            </Box>
           )}
         </ScrollView>
       </Animated.View>
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  scrollView: {
-    flex: 1,
-    padding: 16,
-  },
-  profileContainer: {
-    alignItems: "center",
-    marginBottom: 24,
-    marginTop: 16,
-  },
-  profileImageContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    overflow: "hidden",
-  },
-  profileImage: {
-    width: "100%",
-    height: "100%",
-  },
-  cardsContainer: {
-    backgroundColor: "#f0f0f0",
-    borderRadius: 12,
-    padding: 8,
-    marginBottom: 24,
-  },
-  drawer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "white",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 10,
-    overflow: "hidden",
-  },
-  drawerHandle: {
-    width: "100%",
-    alignItems: "center",
-    paddingTop: 8,
-  },
-  dragIndicator: {
-    width: 40,
-    height: 5,
-    backgroundColor: "#ddd",
-    borderRadius: 5,
-    marginBottom: 5,
-  },
-  drawerHeader: {
-    width: "100%",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  drawerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  searchContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  searchInput: {
-    backgroundColor: "#f0f0f0",
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 16,
-  },
-  transactionList: {
-    flex: 1,
-    padding: 16,
-  },
-  emptyResults: {
-    padding: 20,
-    alignItems: "center",
-  },
-  emptyResultsText: {
-    color: "#999",
-    fontSize: 16,
-  },
-});
